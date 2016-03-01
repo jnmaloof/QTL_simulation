@@ -1,25 +1,37 @@
 ---
-title: "Untitled"
-output: html_document
+title: "QTL simulations"
+output: 
+html_document: 
+keep_md: yes
 ---
 
+## Intro
+
+The goal is to determine the best design for QTL mapping in an F2 population.  Given that a certain number of plants will be grown, is it better for all of those plants to be F2s or, instead, to use a smaller number of F2s and clonally replicate them?
+
+## Load Libraries
 ```{r setup}
 library(qtl)
 library(ggplot2)
 library(reshape2)
 ```
 
+## Set up parameters.
 ```{r parameters}
 chromosomes <- 5
-individuals <- 200 # number of individual plants that would be replicated
-repl <- 3
+individuals <- 600 # number of individual plants that would be replicated.  
+repl <- 3 #
 ```
 
-
+## Simulate a genetic map.
+100 markers per chromosome
 ```{r simmap}
 map <- sim.map(len=rep(100,chromosomes),n.mar=100,include.x = FALSE)
 ```
 
+## Simuate a QTL Cross
+One QTL per chromosome, in the middle.  
+The QTL effect size varies, increasing as we move from chromosome to chromosome.
 ```{r simcross}
 cross <- sim.cross(map=map,
                    model = matrix(c(1:chromosomes, #QTL location (chromosome)
@@ -32,29 +44,40 @@ cross <- sim.cross(map=map,
 cross <- sim.geno(cross)
 ```
 
-Add noise to phenotypes
+## Add noise to phenotypes
+Add some noise.  We create several different phenotypes, each with more noise added.
 ```{r}
 phenotypes <- lapply(0:chromosomes, function(noise) {
-  pheno.matrix <- t(apply(cross$pheno,1,rep,repl))
-  pheno.matrix <- pheno.matrix + rnorm(n=prod(dim(pheno.matrix)),
+  #create the plant replicates
+  pheno.matrix <- t(apply(cross$pheno,1,rep,repl)) 
+  
+  #add the nosise
+  pheno.matrix <- pheno.matrix + rnorm(n=prod(dim(pheno.matrix)), 
                                        mean=0,
                                        sd=noise)
 }) #each element of the list is a phenotype matrix of 3 replicates, with increasing amounts of noise added.
 
-  cross.no.rep <- cross
-  cross.no.rep$pheno <- as.data.frame(sapply(phenotypes, FUN = function(x) x[,1]))
-  cross.with.rep <- cross
-  cross.with.rep$pheno <- as.data.frame(sapply(phenotypes, rowMeans))
-  cross.with.rep <- cross.with.rep[,1:individuals] # so that the total number of individuals grown is the same 
+#now create separate cross objects for each of the two designs
+cross.no.rep <- cross
+
+#for the no rep case take the first replicate
+cross.no.rep$pheno <- as.data.frame(sapply(phenotypes, FUN = function(x) x[,1])) 
+
+cross.with.rep <- cross
+
+#for the case with replicates take the average of the replicates
+cross.with.rep$pheno <- as.data.frame(sapply(phenotypes, rowMeans))
+cross.with.rep <- cross.with.rep[,1:individuals] # so that the total number of individuals grown is the same 
 ```
 
-Map 
+## Do the QTL mapping
+Use scanone, imputation method.
 ```{r map}
 no.rep.scanone <- scanone(cross.no.rep,pheno.col=1:(chromosomes+1),method = "imp")
 with.rep.scanone <- scanone(cross.with.rep,pheno.col=1:(chromosomes+1),method = "imp")
 ```
 
-Map replicated
+## Plot the results
 ```{r map2}
 no.rep.scanone.melt <- melt(no.rep.scanone,id.vars = c("chr","pos"))
 no.rep.scanone.melt$type <- "no replication"
