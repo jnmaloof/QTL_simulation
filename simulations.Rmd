@@ -1,8 +1,8 @@
 ---
 title: "QTL simulations"
 output: 
-html_document: 
-keep_md: yes
+  html_document: 
+    keep_md: yes
 ---
 
 ### Intro
@@ -106,6 +106,7 @@ pl <- pl + facet_grid(type ~ chr)
 pl <- pl + geom_line()
 pl + ylab("LOD score")
 ```
-With no noise (phenotype "V1") replicaton and no replication(small) are the same.  Neither as good as no replication (full). With increasing noise we see the benefits of replication if the total number of F2s is the same (see V6). But if the total number of _plants_ is the same then the no replication design is much better.
+
+With no noise (phenotype "V1") replicaton (first row) and no replication--small (middle row) are the same.  Neither is as good as no replication--full (bottom row). With increasing noise we see the benefits of replication if the total number of F2s is the same (see V6). But if the total number of _plants_ is the same then the no replication design is much better.
 
 
