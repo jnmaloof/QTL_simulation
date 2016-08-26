@@ -1,0 +1,97 @@
+---
+title: "QTL simulations"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+### Intro
+
+The goal is to determine the effect of increasing marker number on mapping resolution
+
+### Load Libraries
+```{r setup}
+library(qtl)
+library(ggplot2)
+library(reshape2)
+```
+
+### Set up parameters.
+```{r parameters}
+chromosomes <- 5
+individuals <- 250 # number of individual plants that would be planted
+```
+
+### Simulate a genetic map.
+500 markers per chromosome
+```{r simmap}
+map <- sim.map(len=rep(100,chromosomes),n.mar=10,include.x = FALSE)
+```
+
+### Simuate a QTL Cross
+One QTL per chromosome, in the middle.  
+The QTL effect size varies, increasing as we move from chromosome to chromosome.
+```{r simcross}
+cross <- sim.cross(map=map,
+                   model = matrix(c(1:chromosomes, #QTL location (chromosome)
+                                    rep(50,chromosomes), #QTL position on chromosome
+                                    1:chromosomes, # additive effect sizes, ranging from 1 to # of chromosomes
+                                    rep(0,chromosomes)), # dominance deviation
+                                  nrow = chromosomes, byrow = FALSE), #1 QTL per chromosome at 50cM, increasing effect size 1:12
+                   n.ind=individuals,
+                   type="f2")
+```
+
+### Create cross with fewer markers
+```{r}
+cross.small <- drop.markers(cross,paste(
+  paste("D",1:5,"M",sep=""),rep(seq(1,10,2),each=5),sep=""))
+```
+
+### Do the QTL mapping
+Use scanone, imputation method.
+```{r map}
+cross <- sim.geno(cross)
+cross.small <- sim.geno(cross.small)
+scanone <- scanone(cross,pheno.col=1,method = "imp")
+scanone.small <- scanone(cross.small,pheno.col=1,method = "imp")
+```
+
+### Plot the results
+```{r map2,fig.height=7}
+scanone.melt <- melt(scanone,id.vars = c("chr","pos"))
+scanone.melt$type <- "500 markers per chromosome"
+
+scanone.small.melt <- melt(scanone.small,id.vars = c("chr","pos"))
+scanone.small.melt$type <- "250 markers per chromosome"
+
+combined.scanone <- rbind(scanone.melt,scanone.small.melt)
+pl <- ggplot(combined.scanone,aes(x=pos,y=value,color=type))
+pl <- pl + facet_grid(chr ~ .) 
+pl <- pl + geom_line()
+pl + ylab("LOD score")
+```
+
+### Repeat with CIM
+### Do the QTL mapping
+Use scanone, imputation method.
+```{r map}
+cim <- cim(cross,pheno.col=1,method = "imp")
+cim.small <- cim(cross.small,pheno.col=1,method = "imp")
+```
+
+### Plot the results
+```{r map2,fig.height=7}
+cim.melt <- melt(cim,id.vars = c("chr","pos"))
+cim.melt$type <- "500 markers per chromosome"
+
+cim.small.melt <- melt(cim.small,id.vars = c("chr","pos"))
+cim.small.melt$type <- "250 markers per chromosome"
+
+combined.cim <- rbind(cim.melt,cim.small.melt)
+pl <- ggplot(combined.cim,aes(x=pos,y=value,color=type))
+pl <- pl + facet_grid(chr ~ .) 
+pl <- pl + geom_line()
+pl + ylab("LOD score")
+```
+
