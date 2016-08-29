@@ -19,13 +19,14 @@ library(reshape2)
 ### Set up parameters.
 ```{r parameters}
 chromosomes <- 5
-individuals <- 250 # number of individual plants that would be planted
+individuals <- 1000 # number of individual plants that would be planted
+markers <- 500 # number of markers per chromsomes in largest cross
 ```
 
 ### Simulate a genetic map.
 500 markers per chromosome
 ```{r simmap}
-map <- sim.map(len=rep(100,chromosomes),n.mar=10,include.x = FALSE)
+map <- sim.map(len=rep(100,chromosomes),n.mar=markers,include.x = FALSE)
 ```
 
 ### Simuate a QTL Cross
@@ -44,8 +45,9 @@ cross <- sim.cross(map=map,
 
 ### Create cross with fewer markers
 ```{r}
-cross.small <- drop.markers(cross,paste(
-  paste("D",1:5,"M",sep=""),rep(seq(1,10,2),each=5),sep=""))
+marker.names <- unlist(lapply(map,names))
+cross.small <- drop.markers(cross,sample(marker.names,2400,replace = FALSE))
+cross.small
 ```
 
 ### Do the QTL mapping
@@ -75,13 +77,13 @@ pl + ylab("LOD score")
 ### Repeat with CIM
 ### Do the QTL mapping
 Use scanone, imputation method.
-```{r map}
+```{r cim_map}
 cim <- cim(cross,pheno.col=1,method = "imp")
 cim.small <- cim(cross.small,pheno.col=1,method = "imp")
 ```
 
 ### Plot the results
-```{r map2,fig.height=7}
+```{r cim_map2,fig.height=7}
 cim.melt <- melt(cim,id.vars = c("chr","pos"))
 cim.melt$type <- "500 markers per chromosome"
 
